@@ -1,0 +1,9 @@
+# Azure Developer CLI (azd) configuration for Blazor Server App on App Service (Linux, B1)
+name: CRUDTasksWithAgent
+metadata:
+  template: spring-appservice
+services:
+  web:
+    project: .
+    language: java
+    host: appservice

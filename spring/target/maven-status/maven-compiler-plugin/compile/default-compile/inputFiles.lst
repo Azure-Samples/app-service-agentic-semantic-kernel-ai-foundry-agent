@@ -1,0 +1,7 @@
+/workspaces/app-service-agentic-semantic-kernel-ai-foundry-agent/spring/src/main/java/com/example/crudtaskswithagent/CrudTasksWithAgentApplication.java
+/workspaces/app-service-agentic-semantic-kernel-ai-foundry-agent/spring/src/main/java/com/example/crudtaskswithagent/controller/AgentController.java
+/workspaces/app-service-agentic-semantic-kernel-ai-foundry-agent/spring/src/main/java/com/example/crudtaskswithagent/controller/TaskController.java
+/workspaces/app-service-agentic-semantic-kernel-ai-foundry-agent/spring/src/main/java/com/example/crudtaskswithagent/model/TaskItem.java
+/workspaces/app-service-agentic-semantic-kernel-ai-foundry-agent/spring/src/main/java/com/example/crudtaskswithagent/plugin/TaskCrudPlugin.java
+/workspaces/app-service-agentic-semantic-kernel-ai-foundry-agent/spring/src/main/java/com/example/crudtaskswithagent/repository/TaskRepository.java
+/workspaces/app-service-agentic-semantic-kernel-ai-foundry-agent/spring/src/main/java/com/example/crudtaskswithagent/service/SemanticKernelAgentService.java

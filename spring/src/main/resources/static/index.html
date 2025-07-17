@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager with AI Agent</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+        }
+        .chat-message {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Task List Component
+        function TaskList({ refreshTrigger }) {
+            const [tasks, setTasks] = useState([]);
+            const [newTaskTitle, setNewTaskTitle] = useState('');
+
+            const loadTasks = async () => {
+                const response = await fetch('/api/tasks');
+                if (response.ok) {
+                    setTasks(await response.json());
+                }
+            };
+
+            const addTask = async () => {
+                if (!newTaskTitle.trim()) return;
+                
+                const response = await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `title=${encodeURIComponent(newTaskTitle)}`
+                });
+                
+                if (response.ok) {
+                    setNewTaskTitle('');
+                    loadTasks();
+                }
+            };
+
+            const toggleTask = async (task) => {
+                const response = await fetch(`/api/tasks/${task.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...task, complete: !task.complete })
+                });
+                
+                if (response.ok) {
+                    loadTasks();
+                }
+            };
+
+            const deleteTask = async (id) => {
+                const response = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    loadTasks();
+                }
+            };
+
+            useEffect(() => {
+                loadTasks();
+            }, []);
+
+            // Refresh tasks when refreshTrigger changes
+            useEffect(() => {
+                if (refreshTrigger > 0) {
+                    loadTasks();
+                }
+            }, [refreshTrigger]);
+
+            return (
+                <div className="card h-100">
+                    <div className="card-body">
+                        <h5 className="card-title">Task Manager</h5>
+                        
+                        <div className="input-group mb-3">
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={newTaskTitle}
+                                onChange={(e) => setNewTaskTitle(e.target.value)}
+                                placeholder="Enter new task..."
+                                onKeyPress={(e) => e.key === 'Enter' && addTask()}
+                            />
+                            <button
+                                className="btn btn-primary"
+                                onClick={addTask}
+                                disabled={!newTaskTitle.trim()}
+                            >
+                                Add
+                            </button>
+                        </div>
+
+                        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                            {tasks.length === 0 ? (
+                                <div className="text-center text-muted p-3">
+                                    No tasks yet. Add one above!
+                                </div>
+                            ) : (
+                                tasks.map(task => (
+                                    <div key={task.id} className={`card mb-2 ${task.complete ? 'text-decoration-line-through' : ''}`}>
+                                        <div className="card-body py-2">
+                                            <div className="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>{task.title}</strong>
+                                                    <div className="small text-muted">
+                                                        ID: {task.id} | {task.complete ? 'Complete' : 'Pending'}
+                                                    </div>
+                                                </div>
+                                                <div className="btn-group btn-group-sm">
+                                                    <button
+                                                        className={`btn ${task.complete ? 'btn-outline-secondary' : 'btn-outline-success'}`}
+                                                        onClick={() => toggleTask(task)}
+                                                    >
+                                                        {task.complete ? 'Undo' : 'Complete'}
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-outline-danger"
+                                                        onClick={() => deleteTask(task.id)}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Chat Component
+        function ChatInterface({ onChatResponse }) {
+            const [messages, setMessages] = useState(() => {
+                // Load messages from sessionStorage on component mount
+                const savedMessages = sessionStorage.getItem('chatMessages');
+                return savedMessages ? JSON.parse(savedMessages) : [];
+            });
+            const [currentMessage, setCurrentMessage] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [sessionId, setSessionId] = useState(() => {
+                // Get or create a session ID that persists across browser refreshes
+                let storedSessionId = sessionStorage.getItem('chatSessionId');
+                if (!storedSessionId) {
+                    storedSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    sessionStorage.setItem('chatSessionId', storedSessionId);
+                }
+                return storedSessionId;
+            });
+
+            // Save messages to sessionStorage whenever messages change
+            useEffect(() => {
+                sessionStorage.setItem('chatMessages', JSON.stringify(messages));
+            }, [messages]);
+
+            const sendMessage = async () => {
+                if (!currentMessage.trim()) return;
+                
+                const userMessage = { role: 'user', content: currentMessage };
+                setMessages(prev => [...prev, userMessage]);
+                setCurrentMessage('');
+                setLoading(true);
+
+                try {
+                    const response = await fetch(`/api/agents/semantic-kernel/chat?message=${encodeURIComponent(currentMessage)}&sessionId=${encodeURIComponent(sessionId)}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    if (response.ok) {
+                        const text = await response.text();
+                        setMessages(prev => [...prev, { role: 'assistant', content: text }]);
+                        
+                        // Trigger task list refresh after receiving AI response
+                        if (onChatResponse) {
+                            onChatResponse();
+                        }
+                    }
+                } catch (err) {
+                    console.error('Chat error:', err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="card h-100">
+                    <div className="card-body d-flex flex-column">
+                        <h5 className="card-title">AI Assistant</h5>
+                        
+                        <div className="chat-messages border rounded p-3 mb-3 bg-light flex-grow-1">
+                            {messages.length === 0 ? (
+                                <div className="text-center text-muted">
+                                    Start a conversation with the AI assistant<br/>
+                                    for task management!
+                                </div>
+                            ) : (
+                                messages.map((message, index) => (
+                                    <div key={index} className={`chat-message mb-3 p-2 rounded ${
+                                        message.role === 'user' ? 'bg-primary text-white ms-5' : 'bg-white me-5'
+                                    }`}>
+                                        <div className="fw-bold mb-1">
+                                            {message.role === 'user' ? 'You' : 'AI Assistant'}
+                                        </div>
+                                        <div>{message.content}</div>
+                                    </div>
+                                ))
+                            )}
+                            {loading && (
+                                <div className="chat-message mb-3 p-2 rounded bg-white me-5">
+                                    <div className="fw-bold mb-1">AI Assistant</div>
+                                    <div>Thinking...</div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="input-group">
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={currentMessage}
+                                onChange={(e) => setCurrentMessage(e.target.value)}
+                                placeholder="Type your message..."
+                                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                                disabled={loading}
+                            />
+                            <button
+                                className="btn btn-primary"
+                                onClick={sendMessage}
+                                disabled={loading || !currentMessage.trim()}
+                            >
+                                Send
+                            </button>
+                            <button
+                                className="btn btn-outline-secondary"
+                                onClick={() => {
+                                    setMessages([]);
+                                    sessionStorage.removeItem('chatMessages');
+                                    // Keep the same session ID so agent thread continues
+                                }}
+                                disabled={loading}
+                            >
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Main App Component
+        function App() {
+            const [taskRefreshTrigger, setTaskRefreshTrigger] = useState(0);
+
+            const handleChatResponse = () => {
+                // Increment trigger to cause task list refresh
+                setTaskRefreshTrigger(prev => prev + 1);
+            };
+
+            return (
+                <div className="container py-4">
+                    <div className="text-center mb-4">
+                        <h1 className="display-4 text-primary">Task Manager with AI Assistant</h1>
+                        <p className="lead">Manage your tasks and chat with an AI assistant powered by Semantic Kernel</p>
+                    </div>
+                    
+                    <div className="row g-4">
+                        <div className="col-md-6">
+                            <TaskList refreshTrigger={taskRefreshTrigger} />
+                        </div>
+                        <div className="col-md-6">
+                            <ChatInterface onChatResponse={handleChatResponse} />
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Render the app
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+com/example/crudtaskswithagent/controller/AgentController.class
+com/example/crudtaskswithagent/CrudTasksWithAgentApplication.class
+com/example/crudtaskswithagent/plugin/TaskCrudPlugin.class
+com/example/crudtaskswithagent/model/TaskItem.class
+com/example/crudtaskswithagent/repository/TaskRepository.class
+com/example/crudtaskswithagent/controller/TaskController.class
