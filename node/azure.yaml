@@ -1,0 +1,9 @@
+# Azure Developer CLI (azd) configuration for Node.js App on App Service (Linux, B1)
+name: TaskManagerNodeAgents
+metadata:
+  template: nodejs-appservice
+services:
+  web:
+    project: .
+    language: js
+    host: appservice

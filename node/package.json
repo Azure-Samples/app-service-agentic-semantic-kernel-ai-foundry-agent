@@ -1,0 +1,49 @@
+{
+  "name": "task-manager-node-agents",
+  "version": "1.0.0",
+  "description": "Task Manager with LangGraph and Azure AI Foundry Agents in TypeScript",
+  "main": "dist/app.js",
+  "scripts": {
+    "start": "node dist/app.js",
+    "dev": "nodemon --exec ts-node src/app.ts",
+    "build": "tsc",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@azure/ai-agents": "^1.0.0",
+    "@azure/identity": "^4.10.2",
+    "@langchain/core": "^0.3.66",
+    "@langchain/langgraph": "^0.3.11",
+    "@langchain/langgraph-supervisor": "^0.0.15",
+    "@langchain/openai": "^0.5.18",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^5.1.0",
+    "sqlite3": "^5.1.6",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^9.0.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.0",
+    "@types/express": "^4.17.0",
+    "@types/node": "^20.0.0",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/uuid": "^9.0.0",
+    "nodemon": "^3.0.1",
+    "rimraf": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "nodejs",
+    "langgraph",
+    "azure-ai-foundry",
+    "task-manager",
+    "agents"
+  ],
+  "author": "",
+  "license": "MIT"
+}
