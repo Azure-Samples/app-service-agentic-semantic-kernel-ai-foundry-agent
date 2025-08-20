@@ -1,0 +1,7 @@
+# Azure yaml for Python FastAPI version
+name: task-manager-python
+services:
+  web:
+    language: python
+    host: appservice
+    project: .
