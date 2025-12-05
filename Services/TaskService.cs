@@ -6,7 +6,7 @@ namespace CRUDTasksWithAgent.Services
     // TaskService is used by:
     // 1. The CRUD Home.razor component for UI task management.
     // 2. The mapped API endpoints in Program.cs for backend task operations.
-    // 3. The semantic kernel plugin in TaskCrudPlugin.cs for agent-based task management.
+    // 3. The Microsoft Agent Framework tool in TaskCrudTool.cs for agent-based task management.
 
     public class TaskService
     {

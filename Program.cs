@@ -1,5 +1,6 @@
 using CRUDTasksWithAgent.Components;
 using CRUDTasksWithAgent.Models;
+using CRUDTasksWithAgent.Tools;
 using CRUDTasksWithAgent.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,14 +12,15 @@ builder.Services.AddRazorComponents()
 builder.Services.AddDbContext<TasksDbContext>(options =>
     options.UseInMemoryDatabase("TasksDb"));
 
+// Register TaskService and TaskCrudTool as scoped services
+builder.Services.AddScoped<TaskService>();
+builder.Services.AddScoped<TaskCrudTool>();
+
+// Register Agent Framework provider (for AgentFrameworkAgent.razor)
+builder.Services.AddScoped<IAgentFrameworkProvider, AgentFrameworkProvider>();
+
 // Register Foundry agent provider (for FoundryAgent.razor)
 builder.Services.AddScoped<IFoundryAgentProvider, FoundryAgentProvider>();
-
-// Register Semantic Kernel agent provider (for SemanticKernelAgent.razor)
-builder.Services.AddScoped<ISemanticKernelAgentProvider, SemanticKernelAgentProvider>();
-
-// Register TaskService
-builder.Services.AddScoped<TaskService>();
 
 // Register OpenAPI for external agents
 builder.Services.AddOpenApi();

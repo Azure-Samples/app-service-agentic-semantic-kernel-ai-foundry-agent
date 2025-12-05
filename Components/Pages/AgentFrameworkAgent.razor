@@ -1,17 +1,15 @@
-@page "/skagent"
-@using Microsoft.SemanticKernel
-@using Microsoft.SemanticKernel.Agents
-@using Microsoft.SemanticKernel.ChatCompletion
+@page "/agentfx"
+@using Microsoft.Extensions.AI
+@using Microsoft.Agents.AI
 @using Microsoft.AspNetCore.Components
-@inject CRUDTasksWithAgent.Services.ISemanticKernelAgentProvider AgentProvider
+@inject CRUDTasksWithAgent.Services.IAgentFrameworkProvider AgentProvider
 @inject IJSRuntime JSRuntime
-@inject ILogger<SemanticKernelAgent> Logger
 @rendermode InteractiveServer
 
-@if (!AgentProvider.IsConfigured)
+@if (AgentProvider.Agent == null)
 {
     <div class="alert alert-warning" role="alert">
-        The Semantic Kernel agent is not configured. Please set the required environment 
+        The Agent Framework agent is not configured. Please set the required environment 
         variables (<code>ModelDeployment</code> and <code>AzureOpenAIEndpoint</code>) 
         in your appsettings or environment to enable this feature.
     </div>
@@ -21,33 +19,33 @@ else
     <div class="container-fluid d-flex flex-column align-items-center justify-content-center" style="height: 100vh;">
         <div class="card shadow w-100" style="max-width: 600px; height: 80vh; min-height: 400px; display: flex; flex-direction: column;">
             <div class="card-header bg-primary text-white">
-                <h3 class="mb-0">Semantic Kernel Agent</h3>
+                <h3 class="mb-0">Microsoft Agent Framework</h3>
             </div>
             <div class="card-body flex-grow-1 overflow-auto" id="chatMessages" style="min-height: 0;">
                 @{
-                    AuthorRole? lastRole = null;
+                    ChatRole? lastRole = null;
                 }
-                @foreach (var message in this.agentThread.ChatHistory)
+                @foreach (var message in this.agentThread?.GetService<IList<ChatMessage>>() ?? Enumerable.Empty<ChatMessage>())
                 {
-                    if (string.IsNullOrWhiteSpace(message.Content))
+                    if (string.IsNullOrWhiteSpace(message.Text))
                     {
                         continue;
                     }
                     bool showAvatar = lastRole != message.Role;
                     if (showAvatar)
                     {
-                        <div class="my-2 fw-bold d-flex @(message.Role == AuthorRole.User ? "justify-content-end" : "justify-content-start")">
-                            @(message.Role == AuthorRole.User ? "User" : "Agent")
+                        <div class="my-2 fw-bold d-flex @(message.Role == ChatRole.User ? "justify-content-end" : "justify-content-start")">
+                            @(message.Role == ChatRole.User ? "User" : "Agent")
                         </div>
                     }
-                    <div class="mb-2 p-2 rounded @((message.Role == AuthorRole.User) ? "bg-primary text-white ms-auto" : "bg-success bg-opacity-10 text-dark me-auto")" style="max-width: 80%; word-break: break-word;">
-                        @if (message.Role == AuthorRole.User)
+                    <div class="mb-2 p-2 rounded @((message.Role == ChatRole.User) ? "bg-primary text-white ms-auto" : "bg-success bg-opacity-10 text-dark me-auto")" style="max-width: 80%; word-break: break-word;">
+                        @if (message.Role == ChatRole.User)
                         {
-                            @message.Content
+                            @message.Text
                         }
                         else
                         {
-                            @((MarkupString)message.Content.Replace("\n", "<br />"))
+                            @((MarkupString)message.Text.Replace("\n", "<br />"))
                         }
                     </div>
                     lastRole = message.Role;
@@ -68,10 +66,18 @@ else
 @code {
     private string? userInput;
     // Maintain an agent thread for each browser session
-    private ChatHistoryAgentThread agentThread = new ();
-    private ChatCompletionAgent? Agent => AgentProvider.Agent;
+    private AgentThread agentThread = null!;
+    private AIAgent? Agent => AgentProvider.Agent;
 
-    // Given the injected Semantic Kernel agent and the thread, simply call Agent.InvokeAsync()
+    protected override void OnInitialized()
+    {
+        if (Agent != null)
+        {
+            agentThread = Agent.GetNewThread();
+        }
+    }
+
+    // Given the injected Agent Framework agent and the thread, simply call Agent.RunAsync()
     // to process the user prompt.
 
     private async Task SendMessageAsync()
@@ -82,13 +88,10 @@ else
             this.userInput = string.Empty;
             StateHasChanged();
 
-            // Send message to agent and get response
-            var message = new ChatMessageContent(AuthorRole.User, sentInput);
-            await foreach (ChatMessageContent response in this.Agent.InvokeAsync(message, this.agentThread))
-            {
-                // Log response
-                Logger.LogInformation("Agent response: {Response}", response.Content);
-            }
+            // Send message to agent and get response using Agent Framework pattern
+            var response = await this.Agent.RunAsync(sentInput, this.agentThread);
+            
+            StateHasChanged();
         }
     }
 

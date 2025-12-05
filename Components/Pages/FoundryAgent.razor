@@ -1,19 +1,16 @@
 @page "/foundryagent"
 @using Microsoft.AspNetCore.Components
-@using Azure.AI.Agents.Persistent
-@using CRUDTasksWithAgent.Models
-@using Microsoft.Net.Http.Headers
-@using Azure
+@using Azure.AI.Projects.OpenAI
+@using OpenAI.Responses
 @inject CRUDTasksWithAgent.Services.IFoundryAgentProvider FoundryProvider
 @inject IJSRuntime JSRuntime
-@inject IConfiguration Configuration
 @rendermode InteractiveServer
 
-@if (!FoundryProvider.IsConfigured)
+@if (FoundryProvider.ResponseClient == null)
 {
     <div class="alert alert-warning" role="alert">
         The Foundry agent is not configured. Please set the required environment variables 
-        (<code>AzureAIFoundryProjectEndpoint</code> and <code>AzureAIFoundryAgentId</code>) 
+        (<code>FoundryProjectEndpoint</code> and <code>FoundryAgentName</code>) 
         in your appsettings or environment to enable this feature.
     </div>
 }
@@ -22,41 +19,17 @@ else
     <div class="container-fluid d-flex flex-column align-items-center justify-content-center" style="height: 100vh;">
         <div class="card shadow w-100" style="max-width: 600px; height: 80vh; min-height: 400px; display: flex; flex-direction: column;">
             <div class="card-header bg-primary text-white">
-                <h3 class="mb-0">Azure AI Foundry Agent</h3>
+                <h3 class="mb-0">Foundry Agent Service</h3>
             </div>
             <div class="card-body flex-grow-1 overflow-auto" id="chatMessages" style="min-height: 0;">
-                @{
-                    MessageRole? lastRole = null;
-                }
-                @if (chatHistory != null)
+                @foreach (var message in messages)
                 {
-                    foreach (var message in chatHistory)
-                    {
-                        bool showAvatar = lastRole != message.Role;
-                        if (showAvatar)
-                        {
-                            <div class="my-2 fw-bold d-flex @(message.Role == MessageRole.User ? "justify-content-end" : "justify-content-start")">
-                                @(message.Role == MessageRole.User ? "User" : "Agent")
-                            </div>
-                        }
-                        <div class="mb-2 p-2 rounded @((message.Role == MessageRole.User) ? "bg-primary text-white ms-auto" : "bg-success bg-opacity-10 text-dark me-auto")" style="max-width: 80%; word-break: break-word;">
-                            @if (message.ContentItems != null)
-                            {
-                                foreach (var content in message.ContentItems)
-                                {
-                                    if (content is MessageTextContent textContent)
-                                    {
-                                        @((MarkupString)textContent.Text.Replace("\n", "<br />"))
-                                    }
-                                    else
-                                    {
-                                        <span>Unsupported content type</span>
-                                    }
-                                }
-                            }
-                        </div>
-                        lastRole = message.Role;
-                    }
+                    <div class="my-2 fw-bold d-flex @(message.IsUser ? "justify-content-end" : "justify-content-start")">
+                        @(message.IsUser ? "User" : "Agent")
+                    </div>
+                    <div class="mb-2 p-2 rounded @(message.IsUser ? "bg-primary text-white ms-auto" : "bg-success bg-opacity-10 text-dark me-auto")" style="max-width: 80%; word-break: break-word;">
+                        @((MarkupString)message.Content.Replace("\n", "<br />"))
+                    </div>
                 }
             </div>
             <div class="card-footer bg-light">
@@ -73,64 +46,59 @@ else
 
 @code {
     private bool isLoading;
-    private string? chatMessage { get; set; }
-    private Pageable<PersistentThreadMessage>? chatHistory;
-    private string threadId => FoundryProvider.ThreadId!;
-
     private string? userInput;
-    private PersistentAgent agent => FoundryProvider.Agent!;
+    private List<ChatMessageDisplay> messages = new();
 
-    private PersistentAgentsClient client => FoundryProvider.Client!;
+    private class ChatMessageDisplay
+    {
+        public string Content { get; set; } = string.Empty;
+        public bool IsUser { get; set; }
+    }
 
-    // Given the injected client, agent, and thread ID, this code shows the standard pattern of:
-    // 1. Add the user prompt to the thread
-    // 2. Create a run to process the user prompt in a run
-    // 3. Poll for completion
-    // 4. Get the result from the thread
+    // Use the Foundry SDK response client to process messages
     private async Task SendMessageAsync()
     {
-        if (string.IsNullOrWhiteSpace(userInput))
+        if (string.IsNullOrWhiteSpace(userInput) || FoundryProvider.ResponseClient == null)
         {
             return;
         }
 
         isLoading = true;
-        var input = userInput;
+        var sentInput = userInput;
         userInput = string.Empty;
-        StateHasChanged();
 
-        // Add the user prompt to the messages in the thread.
-        await client.Messages.CreateMessageAsync(
-            threadId,
-            MessageRole.User,
-            input);
-
-        // Update the chat history and refresh the page
-        chatHistory = client.Messages.GetMessages(
-            threadId: threadId,
-            order: ListSortOrder.Ascending);
-        StateHasChanged();
-
-        // Begin processing user's question with the ThreadRun
-        ThreadRun run = await client.Runs.CreateRunAsync(
-            threadId,
-            agent.Id);
-
-        //Poll for completion.
-        do
+        // Add user message to display
+        messages.Add(new ChatMessageDisplay
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(500));
-            run = await client.Runs.GetRunAsync(threadId, run.Id);
+            Content = sentInput,
+            IsUser = true
+        });
+        StateHasChanged();
+
+        try
+        {
+            // Send message to agent using Microsoft Foundry SDK
+            #pragma warning disable OPENAI001
+            var response = await FoundryProvider.ResponseClient.CreateResponseAsync(sentInput);
+            #pragma warning restore OPENAI001
+
+            // Add agent response to display
+            var responseText = response.Value.GetOutputText();
+            messages.Add(new ChatMessageDisplay
+            {
+                Content = responseText,
+                IsUser = false
+            });
         }
-        while (run.Status == RunStatus.Queued
-            || run.Status == RunStatus.InProgress
-            || run.Status == RunStatus.RequiresAction);
-
-        //Get the messages in the thread, including both agent and user messages.
-        chatHistory = client.Messages.GetMessages(
-            threadId: threadId,
-            order: ListSortOrder.Ascending);
-
+        catch (Exception ex)
+        {
+            messages.Add(new ChatMessageDisplay
+            {
+                Content = $"Error: {ex.Message}",
+                IsUser = false
+            });
+        }
+        
         isLoading = false;
         StateHasChanged();
     }
