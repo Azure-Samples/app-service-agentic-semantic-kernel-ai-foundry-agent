@@ -65,17 +65,9 @@ else
 
 @code {
     private string? userInput;
-    // Maintain an agent thread for each browser session
-    private AgentThread agentThread = null!;
     private AIAgent? Agent => AgentProvider.Agent;
-
-    protected override void OnInitialized()
-    {
-        if (Agent != null)
-        {
-            agentThread = Agent.GetNewThread();
-        }
-    }
+    // Use the thread created by the provider (scoped to browser session)
+    private AgentThread? agentThread => AgentProvider.Thread;
 
     // Given the injected Agent Framework agent and the thread, simply call Agent.RunAsync()
     // to process the user prompt.

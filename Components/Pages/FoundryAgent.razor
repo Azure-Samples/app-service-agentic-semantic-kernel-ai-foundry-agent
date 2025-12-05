@@ -22,7 +22,7 @@ else
                 <h3 class="mb-0">Foundry Agent Service</h3>
             </div>
             <div class="card-body flex-grow-1 overflow-auto" id="chatMessages" style="min-height: 0;">
-                @foreach (var message in messages)
+                @foreach (var message in FoundryProvider.Messages)
                 {
                     <div class="my-2 fw-bold d-flex @(message.IsUser ? "justify-content-end" : "justify-content-start")">
                         @(message.IsUser ? "User" : "Agent")
@@ -47,13 +47,6 @@ else
 @code {
     private bool isLoading;
     private string? userInput;
-    private List<ChatMessageDisplay> messages = new();
-
-    private class ChatMessageDisplay
-    {
-        public string Content { get; set; } = string.Empty;
-        public bool IsUser { get; set; }
-    }
 
     // Use the Foundry SDK response client to process messages
     private async Task SendMessageAsync()
@@ -68,7 +61,7 @@ else
         userInput = string.Empty;
 
         // Add user message to display
-        messages.Add(new ChatMessageDisplay
+        FoundryProvider.Messages.Add(new CRUDTasksWithAgent.Services.ChatMessageDisplay
         {
             Content = sentInput,
             IsUser = true
@@ -84,7 +77,7 @@ else
 
             // Add agent response to display
             var responseText = response.Value.GetOutputText();
-            messages.Add(new ChatMessageDisplay
+            FoundryProvider.Messages.Add(new CRUDTasksWithAgent.Services.ChatMessageDisplay
             {
                 Content = responseText,
                 IsUser = false
@@ -92,7 +85,7 @@ else
         }
         catch (Exception ex)
         {
-            messages.Add(new ChatMessageDisplay
+            FoundryProvider.Messages.Add(new CRUDTasksWithAgent.Services.ChatMessageDisplay
             {
                 Content = $"Error: {ex.Message}",
                 IsUser = false

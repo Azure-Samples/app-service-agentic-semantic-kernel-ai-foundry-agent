@@ -15,25 +15,27 @@ namespace CRUDTasksWithAgent.Services
     public interface IAgentFrameworkProvider
     {
         AIAgent? Agent { get; }
+        AgentThread? Thread { get; }
     }
 
     public class AgentFrameworkProvider : IAgentFrameworkProvider
     {
-        private readonly Lazy<AIAgent?> _lazyAgent;
+        private readonly Lazy<(AIAgent? Agent, AgentThread? Thread)> _lazyAgentData;
 
-        public AIAgent? Agent => _lazyAgent.Value;
+        public AIAgent? Agent => _lazyAgentData.Value.Agent;
+        public AgentThread? Thread => _lazyAgentData.Value.Thread;
 
         public AgentFrameworkProvider(IConfiguration config, IServiceProvider sp)
         {
-            // Use Lazy<T> to defer agent creation until first access
-            _lazyAgent = new Lazy<AIAgent?>(() =>
+            // Use Lazy<T> to defer agent and thread creation until first access
+            _lazyAgentData = new Lazy<(AIAgent?, AgentThread?)>(() =>
             {
                 // Get Azure OpenAI configuration
                 var deployment = config["ModelDeployment"];
                 var endpoint = config["AzureOpenAIEndpoint"];
                 if (string.IsNullOrWhiteSpace(deployment) || string.IsNullOrWhiteSpace(endpoint))
                 {
-                    return null;
+                    return (null, null);
                 }
 
                 try
@@ -63,13 +65,16 @@ namespace CRUDTasksWithAgent.Services
                             AIFunctionFactory.Create(taskCrudTool.DeleteTaskAsync)
                         ]);
 
-                    return agent;
+                    // Create thread for this scoped instance (persists across navigation)
+                    var thread = agent.GetNewThread();
+
+                    return (agent, thread);
                 }
                 catch
                 {
                     // If agent creation fails, return null
                     // This prevents the entire app from crashing
-                    return null;
+                    return (null, null);
                 }
             });
         }
