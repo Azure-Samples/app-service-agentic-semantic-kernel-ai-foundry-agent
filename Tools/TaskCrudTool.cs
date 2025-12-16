@@ -1,17 +1,16 @@
-using Microsoft.SemanticKernel;
 using CRUDTasksWithAgent.Models;
 using CRUDTasksWithAgent.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.ComponentModel;
 
-namespace CRUDTasksWithAgent.Plugins
+namespace CRUDTasksWithAgent.Tools
 {
-    public class TaskCrudPlugin
+    public class TaskCrudTool
     {
         private readonly TaskService _taskService;
 
-        public TaskCrudPlugin(TaskService taskService)
+        public TaskCrudTool(TaskService taskService)
         {
             _taskService = taskService;
         }
@@ -21,7 +20,7 @@ namespace CRUDTasksWithAgent.Plugins
         /// </summary>
         /// <param name="title">Title of the task</param>
         /// <param name="isComplete">Whether the task is complete</param>
-        [KernelFunction, Description("Creates a new task with a title and completion status.")]
+        [Description("Creates a new task with a title and completion status.")]
         public async Task<string> CreateTaskAsync(
             [Description("Title of the task")] string title,
             [Description("Whether the task is complete")] bool isComplete = false)
@@ -49,7 +48,7 @@ namespace CRUDTasksWithAgent.Plugins
         /// Reads all tasks, or a single task if an id is provided.
         /// </summary>
         /// <param name="id">Id of the task to read (optional)</param>
-        [KernelFunction, Description("Reads all tasks, or a single task if an id is provided.")]
+        [Description("Reads all tasks, or a single task if an id is provided.")]
         public async Task<List<TaskItem>> ReadTasksAsync(
             [Description("Id of the task to read (optional)")] string? id = null)
         {
@@ -68,7 +67,7 @@ namespace CRUDTasksWithAgent.Plugins
         /// <param name="id">Id of the task to update</param>
         /// <param name="title">New title (optional)</param>
         /// <param name="isComplete">New completion status (optional)</param>
-        [KernelFunction, Description("Updates the specified task fields by id.")]
+        [Description("Updates the specified task fields by id.")]
         public async Task<string> UpdateTaskAsync(
             [Description("Id of the task to update")] string id,
             [Description("New title (optional)")] string? title = null,
@@ -88,7 +87,7 @@ namespace CRUDTasksWithAgent.Plugins
         /// Deletes a task by id.
         /// </summary>
         /// <param name="id">Id of the task to delete</param>
-        [KernelFunction, Description("Deletes a task by id.")]
+        [Description("Deletes a task by id.")]
         public async Task<string> DeleteTaskAsync(
             [Description("Id of the task to delete")] string id)
         {
