@@ -2,8 +2,17 @@ using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using CRUDTasksWithAgent.Tools;
 
+/// <summary>
+/// This class provides an interface to interact with the Ollama API for generating responses based on user
+/// messages. It also includes logic to detect task management intents (create, read, complete, delete) in the user's message
+/// and execute corresponding operations using the TaskCrudTool. The response from Ollama is then tailored to include the results of any tool execution in a natural language format.
+/// </summary>
+/// 
 namespace CRUDTasksWithAgent.Services;
 
+/// <summary>
+/// Represents a chat message for display purposes, indicating whether it's from the user or the assistant.
+/// </summary>
 public class ChatMessageDisplay
 {
     public string Content { get; set; } = string.Empty;
