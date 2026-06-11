@@ -1,57 +1,45 @@
 @page "/foundryagent"
 @using Microsoft.AspNetCore.Components
-@using Azure.AI.Projects.OpenAI
-@using OpenAI.Responses
-@inject CRUDTasksWithAgent.Services.IFoundryAgentProvider FoundryProvider
+@using CRUDTasksWithAgent.Services
+@inject CRUDTasksWithAgent.Services.IOllamaAgentProvider OllamaProvider
 @inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
-@if (FoundryProvider.ResponseClient == null)
-{
-    <div class="alert alert-warning" role="alert">
-        The Foundry agent is not configured. Please set the required environment variables 
-        (<code>FoundryProjectEndpoint</code> and <code>FoundryAgentName</code>) 
-        in your appsettings or environment to enable this feature.
-    </div>
-}
-else
-{
-    <div class="container-fluid d-flex flex-column align-items-center justify-content-center" style="height: 100vh;">
-        <div class="card shadow w-100" style="max-width: 600px; height: 80vh; min-height: 400px; display: flex; flex-direction: column;">
-            <div class="card-header bg-primary text-white">
-                <h3 class="mb-0">Foundry Agent Service</h3>
-            </div>
-            <div class="card-body flex-grow-1 overflow-auto" id="chatMessages" style="min-height: 0;">
-                @foreach (var message in FoundryProvider.Messages)
-                {
-                    <div class="my-2 fw-bold d-flex @(message.IsUser ? "justify-content-end" : "justify-content-start")">
-                        @(message.IsUser ? "User" : "Agent")
-                    </div>
-                    <div class="mb-2 p-2 rounded @(message.IsUser ? "bg-primary text-white ms-auto" : "bg-success bg-opacity-10 text-dark me-auto")" style="max-width: 80%; word-break: break-word;">
-                        @((MarkupString)message.Content.Replace("\n", "<br />"))
-                    </div>
-                }
-            </div>
-            <div class="card-footer bg-light">
-                <EditForm Model="this" OnValidSubmit="SendMessageAsync" FormName="chatForm">
-                    <div class="input-group">
-                        <InputText @bind-Value="userInput" @onkeypress="HandleKeyPress" class="form-control" placeholder="Type your message..." disabled="@isLoading" />
-                        <button type="submit" class="btn btn-primary" disabled="@isLoading">Send</button>
-                    </div>
-                </EditForm>
-            </div>
+<div class="container-fluid d-flex flex-column align-items-center justify-content-center" style="height: 100vh;">
+    <div class="card shadow w-100" style="max-width: 600px; height: 80vh; min-height: 400px; display: flex; flex-direction: column;">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Ollama Agent (Foundry page)</h3>
+        </div>
+        <div class="card-body flex-grow-1 overflow-auto" id="chatMessages" style="min-height: 0;">
+            @foreach (var message in Messages)
+            {
+                <div class="my-2 fw-bold d-flex @(message.IsUser ? "justify-content-end" : "justify-content-start")">
+                    @(message.IsUser ? "User" : "Agent")
+                </div>
+                <div class="mb-2 p-2 rounded @(message.IsUser ? "bg-primary text-white ms-auto" : "bg-success bg-opacity-10 text-dark me-auto")" style="max-width: 80%; word-break: break-word;">
+                    @((MarkupString)message.Content.Replace("\n", "<br />"))
+                </div>
+            }
+        </div>
+        <div class="card-footer bg-light">
+            <EditForm Model="this" OnValidSubmit="SendMessageAsync" FormName="chatForm">
+                <div class="input-group">
+                    <InputText @bind-Value="userInput" @onkeypress="HandleKeyPress" class="form-control" placeholder="Type your message..." disabled="@isLoading" />
+                    <button type="submit" class="btn btn-primary" disabled="@isLoading">Send</button>
+                </div>
+            </EditForm>
         </div>
     </div>
-}
+</div>
 
 @code {
     private bool isLoading;
     private string? userInput;
+    private List<ChatMessageDisplay> Messages { get; } = new();
 
-    // Use the Foundry SDK response client to process messages
     private async Task SendMessageAsync()
     {
-        if (string.IsNullOrWhiteSpace(userInput) || FoundryProvider.ResponseClient == null)
+        if (string.IsNullOrWhiteSpace(userInput))
         {
             return;
         }
@@ -59,39 +47,19 @@ else
         isLoading = true;
         var sentInput = userInput;
         userInput = string.Empty;
-
-        // Add user message to display
-        FoundryProvider.Messages.Add(new CRUDTasksWithAgent.Services.ChatMessageDisplay
-        {
-            Content = sentInput,
-            IsUser = true
-        });
+        Messages.Add(new ChatMessageDisplay { Content = sentInput, IsUser = true });
         StateHasChanged();
 
         try
         {
-            // Send message to agent using Microsoft Foundry SDK
-            #pragma warning disable OPENAI001
-            var response = await FoundryProvider.ResponseClient.CreateResponseAsync(sentInput);
-            #pragma warning restore OPENAI001
-
-            // Add agent response to display
-            var responseText = response.Value.GetOutputText();
-            FoundryProvider.Messages.Add(new CRUDTasksWithAgent.Services.ChatMessageDisplay
-            {
-                Content = responseText,
-                IsUser = false
-            });
+            var response = await OllamaProvider.GetResponseAsync(sentInput);
+            Messages.Add(new ChatMessageDisplay { Content = response, IsUser = false });
         }
         catch (Exception ex)
         {
-            FoundryProvider.Messages.Add(new CRUDTasksWithAgent.Services.ChatMessageDisplay
-            {
-                Content = $"Error: {ex.Message}",
-                IsUser = false
-            });
+            Messages.Add(new ChatMessageDisplay { Content = $"Error: {ex.Message}", IsUser = false });
         }
-        
+
         isLoading = false;
         StateHasChanged();
     }

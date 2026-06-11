@@ -1,7 +1,8 @@
+using CRUDTasksWithAgent;
 using CRUDTasksWithAgent.Components;
 using CRUDTasksWithAgent.Models;
-using CRUDTasksWithAgent.Tools;
 using CRUDTasksWithAgent.Services;
+using CRUDTasksWithAgent.Tools;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,17 +13,15 @@ builder.Services.AddRazorComponents()
 builder.Services.AddDbContext<TasksDbContext>(options =>
     options.UseInMemoryDatabase("TasksDb"));
 
-// Register TaskService and TaskCrudTool as scoped services
 builder.Services.AddScoped<TaskService>();
 builder.Services.AddScoped<TaskCrudTool>();
 
-// Register Agent Framework provider (for AgentFrameworkAgent.razor)
-builder.Services.AddScoped<IAgentFrameworkProvider, AgentFrameworkProvider>();
+builder.Services.AddHttpClient<IOllamaAgentProvider, OllamaAgentProvider>(client =>
+{
+    var ollamaUrl = builder.Configuration["Ollama:Url"] ?? "http://localhost:11434";
+    client.BaseAddress = new Uri(ollamaUrl);
+});
 
-// Register Foundry agent provider (for FoundryAgent.razor)
-builder.Services.AddScoped<IFoundryAgentProvider, FoundryAgentProvider>();
-
-// Register OpenAPI for external agents
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -35,14 +34,11 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAntiforgery();
-
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-// API endpoints for TaskItem
 app.MapOpenApi();
 
 app.MapGet("/api/tasks", async (TaskService taskService) =>
@@ -87,7 +83,7 @@ app.MapDelete("/api/tasks/{id}", async (int id, TaskService taskService) =>
     await taskService.DeleteTaskAsync(task);
     return Results.NoContent();
 })
-.WithDescription("Deletes a task by its ID.")
+.WithDescription("Deletes a task by ID.")
 .WithName("DeleteTask");
 
 app.Run();

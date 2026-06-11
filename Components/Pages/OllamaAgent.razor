@@ -1,5 +1,4 @@
-@page "/agentfx"
-@using Microsoft.AspNetCore.Components
+@page "/ollamaagent"
 @using CRUDTasksWithAgent.Services
 @inject CRUDTasksWithAgent.Services.IOllamaAgentProvider OllamaProvider
 @inject IJSRuntime JSRuntime
@@ -8,7 +7,7 @@
 <div class="container-fluid d-flex flex-column align-items-center justify-content-center" style="height: 100vh;">
     <div class="card shadow w-100" style="max-width: 600px; height: 80vh; min-height: 400px; display: flex; flex-direction: column;">
         <div class="card-header bg-primary text-white">
-            <h3 class="mb-0">Ollama Agent (Agent Framework page)</h3>
+            <h3 class="mb-0">Ollama Agent</h3>
         </div>
         <div class="card-body flex-grow-1 overflow-auto" id="chatMessages" style="min-height: 0;">
             @foreach (var message in Messages)
