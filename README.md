@@ -4,7 +4,7 @@ This repository demonstrates how to build a modern .NET web application that int
 
 ## Getting Started
 
-See [Tutorial: Build an agentic web app in Azure App Service with Microsoft Agent Framework or Foundry Agent Service (.NET)](https://learn.microsoft.com/azure/app-service/tutorial-ai-agentic-web-app-semantic-kernel-foundry).
+See [Tutorial: Build an agentic web app in Azure App Service with Microsoft Agent Framework or Foundry agent Service (.NET)](https://learn.microsoft.com/azure/app-service/tutorial-ai-agent-web-app-semantic-kernel-foundry-dotnet).
 
 ## Features
 
@@ -12,6 +12,27 @@ See [Tutorial: Build an agentic web app in Azure App Service with Microsoft Agen
 - **Microsoft Agent Framework Agent**: Chat with an agent powered by Microsoft Agent Framework.
 - **Foundry Agent Service**: Chat with an agent created in Microsoft Foundry portal.
 - **OpenAPI Schema**: Enables integration with external agents.
+- **App Service authentication**: Infrastructure enables Microsoft Entra authentication for the Blazor app and all API endpoints.
+
+## Security configuration note
+
+The Bicep template enables App Service authentication (`authsettingsV2`) with
+Microsoft Entra ID. The Microsoft Graph Bicep extension creates the tenant-local
+app registration, service principal, and federated identity credential. App
+Service uses a user-assigned managed identity as its client assertion, so the
+authentication setup is fully declarative and does not use client secrets.
+
+When a Foundry OpenAPI tool calls the protected task API, configure the parent
+Foundry resource identity's application ID in the AZD environment:
+
+```bash
+azd env set AZURE_AI_FOUNDRY_ACCOUNT_CLIENT_ID <application-id>
+azd provision
+```
+
+The deployment prints the managed identity audience to use in the OpenAPI tool.
+When you run `azd down`, the template also deletes the tenant-level Entra
+application created for App Service authentication.
 
 ## Project Structure
 

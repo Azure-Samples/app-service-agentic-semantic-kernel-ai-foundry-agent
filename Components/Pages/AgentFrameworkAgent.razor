@@ -1,7 +1,6 @@
 @page "/agentfx"
 @using Microsoft.Extensions.AI
 @using Microsoft.Agents.AI
-@using Microsoft.AspNetCore.Components
 @inject CRUDTasksWithAgent.Services.IAgentFrameworkProvider AgentProvider
 @inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
@@ -38,15 +37,8 @@ else
                             @(message.Role == ChatRole.User ? "User" : "Agent")
                         </div>
                     }
-                    <div class="mb-2 p-2 rounded @((message.Role == ChatRole.User) ? "bg-primary text-white ms-auto" : "bg-success bg-opacity-10 text-dark me-auto")" style="max-width: 80%; word-break: break-word;">
-                        @if (message.Role == ChatRole.User)
-                        {
-                            @message.Text
-                        }
-                        else
-                        {
-                            @((MarkupString)message.Text.Replace("\n", "<br />"))
-                        }
+                    <div class="mb-2 p-2 rounded @((message.Role == ChatRole.User) ? "bg-primary text-white ms-auto" : "bg-success bg-opacity-10 text-dark me-auto")" style="max-width: 80%; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;">
+                        @message.Text
                     </div>
                     lastRole = message.Role;
                 }

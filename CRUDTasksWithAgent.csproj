@@ -11,7 +11,7 @@
     <PackageReference Include="Azure.AI.Projects" Version="1.2.0-beta.5" />
     <PackageReference Include="Azure.AI.OpenAI" Version="2.8.0-beta.1" />
     <PackageReference Include="Azure.Identity" Version="1.17.1" />
-    <PackageReference Include="Microsoft.Agents.AI" Version="*-*" />
+    <PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.251204.1" />
     <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.0.0-preview.251204.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.5" />
