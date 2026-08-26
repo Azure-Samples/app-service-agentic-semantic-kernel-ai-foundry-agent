@@ -4,7 +4,7 @@ This repository demonstrates how to build a modern .NET web application that int
 
 ## Getting Started
 
-See [Tutorial: Build an agentic web app in Azure App Service with Microsoft Agent Framework or Foundry agent Service (.NET)](https://learn.microsoft.com/azure/app-service/tutorial-ai-agent-web-app-semantic-kernel-foundry-dotnet).
+See [Tutorial: Build an agentic web app in Azure App Service with Microsoft Agent Framework or Foundry Agent Service (.NET)](https://learn.microsoft.com/azure/app-service/tutorial-ai-agent-web-app-semantic-kernel-foundry-dotnet).
 
 ## Features
 
