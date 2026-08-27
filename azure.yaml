@@ -2,6 +2,31 @@
 name: CRUDTasksWithAgent
 metadata:
   template: blazor-appservice
+hooks:
+  # Display the audience needed when configuring a Foundry OpenAPI tool.
+  postprovision:
+    posix:
+      shell: sh
+      run: printf '\nFoundry OpenAPI managed identity audience:\n\t%s\n\n' "$AZURE_AUTH_APP_AUDIENCE"
+      interactive: true
+      continueOnError: true
+    windows:
+      shell: pwsh
+      run: Write-Host "`nFoundry OpenAPI managed identity audience:`n`t$env:AZURE_AUTH_APP_AUDIENCE`n"
+      interactive: true
+      continueOnError: true
+  # Entra applications are tenant resources and aren't deleted with the resource group.
+  postdown:
+    posix:
+      shell: sh
+      run: set -eu; client_id="${AZURE_AUTH_APP_CLIENT_ID:-}"; if [ -z "$client_id" ]; then client_id="$(az ad app list --display-name "CRUD Tasks With Agent (${AZURE_ENV_NAME})" --query '[0].appId' --output tsv)"; fi; if [ -n "$client_id" ] && az ad app show --id "$client_id" >/dev/null 2>&1; then az ad app delete --id "$client_id"; printf 'Deleted App Service authentication application %s.\n' "$client_id"; fi
+      interactive: true
+      continueOnError: false
+    windows:
+      shell: pwsh
+      run: $ErrorActionPreference = 'Stop'; $clientId = $env:AZURE_AUTH_APP_CLIENT_ID; if (-not $clientId) { $clientId = az ad app list --display-name "CRUD Tasks With Agent ($env:AZURE_ENV_NAME)" --query '[0].appId' --output tsv; if ($LASTEXITCODE -ne 0) { throw 'Could not look up the App Service authentication application.' } }; if ($clientId -and (az ad app show --id $clientId 2>$null)) { az ad app delete --id $clientId; if ($LASTEXITCODE -ne 0) { throw "Could not delete App Service authentication application $clientId." }; Write-Host "Deleted App Service authentication application $clientId." }
+      interactive: true
+      continueOnError: false
 services:
   web:
     project: .

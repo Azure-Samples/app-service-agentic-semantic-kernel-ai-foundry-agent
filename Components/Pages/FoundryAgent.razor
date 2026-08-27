@@ -1,5 +1,4 @@
 @page "/foundryagent"
-@using Microsoft.AspNetCore.Components
 @using Azure.AI.Projects.OpenAI
 @using OpenAI.Responses
 @inject CRUDTasksWithAgent.Services.IFoundryAgentProvider FoundryProvider
@@ -27,8 +26,8 @@ else
                     <div class="my-2 fw-bold d-flex @(message.IsUser ? "justify-content-end" : "justify-content-start")">
                         @(message.IsUser ? "User" : "Agent")
                     </div>
-                    <div class="mb-2 p-2 rounded @(message.IsUser ? "bg-primary text-white ms-auto" : "bg-success bg-opacity-10 text-dark me-auto")" style="max-width: 80%; word-break: break-word;">
-                        @((MarkupString)message.Content.Replace("\n", "<br />"))
+                    <div class="mb-2 p-2 rounded @(message.IsUser ? "bg-primary text-white ms-auto" : "bg-success bg-opacity-10 text-dark me-auto")" style="max-width: 80%; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;">
+                        @message.Content
                     </div>
                 }
             </div>
